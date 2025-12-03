@@ -2,7 +2,7 @@
 # How Modern CDC Meets the Lakehouse: Airbyte → Iceberg on EKS
 Explore Airbyte's Change Data Capture (CDC) synchronization running on EKS
 
-![[00_flow.png]]
+![flow](images/00_flow.png)
 ## Goal
 The goal of this exercise is to build a reliable and scalable CDC (Change Data Capture) pipeline using Airbyte that replicate data from a Postgres source into an Iceberg data lake on AWS S3. 
 
@@ -38,7 +38,7 @@ Airflow and Airbyte serve different purpose:
 >  If the use case is mainly on data ingestion — especially when CDC is required, Airbyte might be a stronger fit since it reduces custom coding overhead using prebuilt connectors and helps on incremental syncs.
 
 ### Key Concepts on Airbyte
-Please refer to [[Concepts on Airbyte]].
+Please refer to [1_Concepts_on_Airbyte](1_Concepts_on_Airbyte.md).
 
 ---
 ## Architecture
@@ -48,8 +48,7 @@ This project deploys Airbyte on Amazon EKS in a secure, production-style network
 - 3× **public subnets** and 3× **private subnets** across 3 AZs
 - Public subnets host load balancers and bastion host
 - Private subnets host EKS worker nodes and RDS instances
-
-![[git/images/01_architecture.png]]
+![architecture](images/01_architecture.png)
 - Note: can also refer to my old exercise which explains the similar architecture set up.
   (https://github.com/chanchanngann/data-streaming-on-eks/blob/main/README.md)
 
@@ -59,8 +58,7 @@ This project deploys Airbyte on Amazon EKS in a secure, production-style network
 - **Private endpoint** enabled so worker nodes communicate over internal VPC network
 - In production, API access would typically be restricted to Bastion/VPN users
 
-![[git/images/02_controlplane.png]]
-*diagram to visualise my understanding.*
+![controlplane](images/02_controlplane.png)
 ##### Worker Nodes (AWS Managed Node Group)
 - EC2 instances deployed in private subnets
 - Outbound internet access via NAT Gateway
@@ -70,7 +68,7 @@ This project deploys Airbyte on Amazon EKS in a secure, production-style network
 - Applications exposed to the internet through ALB Ingress (for dev setup)
 - Internal communication remains isolated inside private subnets
 
-** **For more details on the architecture and key decisions, please refer to [[2_Architecture]] page.**
+** **For more details on the architecture and key decisions, please refer to [2_Architecture](2_Architecture.md) page.**
 
 ---
 ## Prerequisites
@@ -130,7 +128,7 @@ terraform apply --auto-approve
 ```
 Note: for every module, you need to init to install the modules first.
 2. Check if the cluster is ready on AWS console EKS page. 
-![[git/images/03_console_eks.png]]
+![console_eks](images/03_console_eks.png)
 
 3. Once the EKS cluster is ready, we proceed to authentication: enable the `kubctl` utility to communicate with the API server of the cluster. You can switch to the desired aws profile using `--profile` flag and context using `--alias` flag.
 ```ruby
@@ -142,9 +140,9 @@ aws eks update-kubeconfig --region ap-northeast-2 --name airbyte-cluster --profi
 kubectl get svc
 kubectl get nodes -L node.kubernetes.io/instance-type -L airbyte_node_type
 ```
-![[04_get_svc.png]]
+![get_svc](images/04_get_svc.png)
 
-![[git/images/05_get_node.png]]
+![get_node](images/05_get_node.png)
 
 ##### Optional Steps: Add Access Entries for new user
 1. You can create a new user `dev_user` and grant the user with EKS read-only access (This is done in the terraform code).  
@@ -181,8 +179,8 @@ kubectl config use-context dev-context
 kubectl --context=admin-context auth can-i delete pod
 kubectl --context=dev-context auth can-i delete pod
 ```
-![[git/images/06_admin_context.png]]
-![[git/images/07_dev_context.png]]
+![admin_context](images/06_admin_context.png)
+![dev_context](images/07_dev_context.png)
 6. May need to edit `~/.kube/config` if the access behaviour is not correct. Make sure each user is using the correct AWS profile.
 
 ---
@@ -209,7 +207,7 @@ terraform apply --auto-approve
 ```ruby
 kubectl get deployment -n kube-system
 ```
-![[git/images/08_addons.png]]
+![addons](images/08_addons.png)
 
 ---
 ### Stage 3. Bastion Host
@@ -225,7 +223,7 @@ terraform apply --auto-approve
 terraform output bastion_public_ip
 
 ```
-![[09_bastion.png]]
+![bastion](09_bastion.png)
 2. SSH into the bastion host using your key pair `<keypairname>.pem`. This key pair should be first baked into terraform code when creating the bastion host.
 ```ruby
 cd <project_folder>
@@ -246,7 +244,7 @@ terraform init
 terraform plan
 terraform apply --auto-approve
 ```
-![[git/images/10_rds.png]]
+![rds](images/10_rds.png)
 **Note:**
 - Need to create resource `aws_db_parameter_group` to override some parameters.
 - parameter: `rds.force_ssl` (set it to 0)
@@ -290,7 +288,7 @@ What is this command doing?
 ```ruby
 lsof -i :5432
 ```
-![[git/images/11_lsof.png]]
+![lsof](images/11_lsof.png)
 6. From the local laptop (while the tunnel is active), use any PostgreSQL client to connect to the RDS Postgres. Configure the client as below.
 	- **Host**: `localhost`
 	- **Port**: `5432`
@@ -298,7 +296,7 @@ lsof -i :5432
 	- **Username / Password**: RDS credentials
 	- **SSL mode**: `require` (or enable SSL in client)
 
-![[12_rds_connect.png]]
+![rds_connect](images/12_rds_connect.png)
 
 ---
 ### Stage 5. Deploy Airbyte
@@ -349,8 +347,8 @@ kubectl describe sa airbyte-sa -n airbyte
 kubectl -n airbyte logs pod_id --tail 50
 ```
 
-![[13_get_svc_airbyte.png]]
-![[14_get_deploy_airbyte.png]]
+![get_svc_airbyte](images/13_get_svc_airbyte.png)
+![get_deploy_airbyte](images/14_get_deploy_airbyte.png)
 
 3. To create ingress via HTTPS, we need to create ACM cert first: Create TLS certificate, import to ACM and annotate the Ingress to use the ACM cert ARN.
    a. create certificate
@@ -372,14 +370,14 @@ kubectl create -f airbyte-ingress.yaml
 	- make sure ACM certificate is imported
 	- make sure LB listener includes `443`
 	- make sure load balancer security group inbound rule includes HTTPS 443 traffic
-![[15_elb.png]]
+![elb](images/15_elb.png)
 
 6. When ALB is provisioned, get the IP of the ingress.
 ```ruby
 kubectl get ingress -n airbyte
 nslookup k8s-airbyte-airbytei-xxx.xxx.elb.amazonaws.com
 ```
-![[16_ingress.png]]
+![ingress](images/16_ingress.png)
 7. Update the local `/etc/hosts` file to map the ALB Controller’s external IP to the Airbyte HTTPS hostname.
 ```ruby
 sudo vi /etc/hosts
@@ -392,7 +390,7 @@ sudo vi /etc/hosts
 ```ruby
 https://rachel.airbyte.com
 ```
-![[17_airbyte_ui.png]]
+![airbyte_ui](images/17_airbyte_ui.png)
 
 ---
 ## Part B — Set up CDC synchronization on Airbyte
@@ -466,7 +464,7 @@ https://airbyte.com/tutorials/incremental-change-data-capture-cdc-replication
 ### Step 1: Create table & user in Postgres
 
 1. Create table and insert some data. You can refer to this SQL file `sql/1_source_ddl.sql`
-![[18_create_table.png]]
+![create_table](images/18_create_table.png)
 
 2. Create a dedicated read-only user for replicating data in Airbyte. Then grant this user with **read-only** access to relevant schemas and tables, as well as replication privileges. For privileges part, you can refer to `sql/2_privileges.sql`
 ```sql
@@ -518,7 +516,7 @@ SELECT pg_create_logical_replication_slot('airbyte_slot', 'pgoutput');
 ```sql
 SELECT * FROM pg_replication_slots;
 ```
-![[19_replication_slot.png]]
+![replication_slot](images/19_replication_slot.png)
 
 6. Give the user `cdc_user` replication privileges. This allows Airbyte (cdc_user) to create logical replication slots.
 ```ruby
@@ -534,7 +532,7 @@ GRANT rds_replication TO cdc_user;
 - publication: airbyte_pub
 ```
 2. Test the connection.
-![[20_postgres_src.png]]
+![postgres_src](images/20_postgres_src.png)
 
 ### Step 5: Set up Iceberg destination connector in Airbyte
 
@@ -561,7 +559,7 @@ aws glue create-database --database-input '{"Name": "iceberg_db"}'
 ```
 
 3. Test the connection.
-![[21_iceberg_dest.png]]
+![21_iceberg_dest.png](images/21_iceberg_dest.png)
 
 ### Step 6: Test CDC with Incremental Dedupe Synchronization
 
@@ -581,30 +579,30 @@ aws glue create-database --database-input '{"Name": "iceberg_db"}'
 	- Destination Namespace: `Destination-defined` 
 	  (Sync all streams to the schema defined in the destination's settings.)
 ```
-![[22_connection.png]]
-![[23_connection_config.png]]
+![22_connection.png](images/22_connection.png)
+![23_connection_config.png](images/23_connection_config.png)
 
 2. Click `Sync now` to start the first data sync in Airbyte. You can also check the pod `replication-job-xxx` status and logs.
-![[24_airbyte_sync.png]]
+![24_airbyte_sync.png](images/24_airbyte_sync.png)
 ```ruby
 kubectl get pod -n airbyte
 kubectl logs replication-job-xxx -n airbyte --tail 100
 ```
-![[25_sync_pod_status.png]]
+![25_sync_pod_status.png](images/25_sync_pod_status.png)
 
 3. After the data sync completes, verify the data in Athena, S3, and the Glue Data Catalog.  You don’t need to create the table manually in Athena—the table definition is automatically created in the Glue Catalog, and Athena reads it from there.
 ```sql
 SELECT * FROM iceberg_db.customers LIMIT 10;
 ```
 Athena
-![[26_athena_before.png]]
+![26_athena_before.png](images/26_athena_before.png)
 S3
-![[27_s3_before.png]]
+![27_s3_before.png](images/27_s3_before.png)
 Glue
-![[28_glue_before.png]]
+![28_glue_before.png](images/28_glue_before.png)
 
 4. Now, we do a CDC test. Execute insert/update/delete queries in Postgres using `sql/3_source_dml.sql`  (database = `cdc_db`) .
-![[29_postgres_after.png]]
+![29_postgres_after.png](images/29_postgres_after.png)
 
 5. Click `Sync now` again to start data sync in Airbyte. Note that the sync frequency in Airbyte might have to be increased to avoid lagging behind WAL retention.
 
@@ -614,10 +612,10 @@ SELECT * FROM iceberg_db.customers LIMIT 10;
 ```
 
 Airbyte UI
-![[30_airbyte_sync_done.png]]
+![30_airbyte_sync_done.png](images/30_airbyte_sync_done.png)
 
 Athena
-![[31_athena_after.png]]
+![31_athena_after.png](images/31_athena_after.png)
 - New row is inserted: with email = `donald.chan@example.com`
 - Existing values are updated: to `charlie.new@example.com` and to `alice.new@example.com`
 
@@ -629,11 +627,11 @@ SELECT * FROM "iceberg_db"."customers$history" order by made_current_at desc;
 SELECT * FROM iceberg_db.customers FOR VERSION AS OF 4229096650788304753;
 ```
 - List table history:
-![[32_athena_history.png]]
+![32_athena_history.png](images/32_athena_history.png)
 
 - Test time travel: 
   This snapshot version still shows `charlie.park@example.com`, even though the value has been updated to `charlie.new@example.com` in the latest snapshot.
-![[33_athena_timetravel.png]]
+![33_athena_timetravel.png](images/33_athena_timetravel.png)
 ---
 ## Conclusion
 
@@ -687,9 +685,10 @@ helm list -A
 	   - EBS volumes
 	   - Load balancers
 
+---
 ## Follow-ups
 1. Implement **Karpenter** or Autoscaler which can dynamically provision and right-size nodes in an EKS (or Kubernetes) cluster to efficiently meet workload demands.
-
+---
 ## References
 - https://airbyte.com/tutorials/incremental-change-data-capture-cdc-replication
 - https://medium.com/@kelvingakuo/self-hosting-airbyte-oss-on-aws-elastic-kubernetes-service-c74eb0bdb42d
