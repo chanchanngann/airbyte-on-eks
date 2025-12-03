@@ -132,7 +132,7 @@ Note: for every module, you need to init to install the modules first.
 
 3. Once the EKS cluster is ready, we proceed to authentication: enable the `kubctl` utility to communicate with the API server of the cluster. You can switch to the desired aws profile using `--profile` flag and context using `--alias` flag.
 ```ruby
-aws eks update-kubeconfig --region ap-northeast-2 --name airbyte-cluster --profile mydefault --alias admin-context
+aws eks update-kubeconfig --region <region_name> --name airbyte-cluster --profile mydefault --alias admin-context
 ```
 
 4. Test connection and check if the label `airbyte_node_type` are applied on nodes.
@@ -157,7 +157,7 @@ terraform output -raw dev_user_secret_access_key
 aws configure --profile dev_user
 
 # authenticate using this user profile
-aws eks update-kubeconfig --region ap-northeast-2 --name airbyte-cluster --profile dev_user --alias dev-context
+aws eks update-kubeconfig --region <region_name> --name airbyte-cluster --profile dev_user --alias dev-context
 ```
 3. You can check the available contexts and the current context.
 ``` ruby
@@ -181,6 +181,7 @@ kubectl --context=dev-context auth can-i delete pod
 ```
 ![admin_context](images/06_admin_context.png)
 ![dev_context](images/07_dev_context.png)
+
 6. May need to edit `~/.kube/config` if the access behaviour is not correct. Make sure each user is using the correct AWS profile.
 
 ---
@@ -219,11 +220,13 @@ cd ../stage3-bastion
 terraform init
 terraform apply --auto-approve
 
-## when bastion is ready
+# when bastion is ready
 terraform output bastion_public_ip
 
 ```
-![bastion](09_bastion.png)
+
+![09_bastion.png](09_bastion.png)
+
 2. SSH into the bastion host using your key pair `<keypairname>.pem`. This key pair should be first baked into terraform code when creating the bastion host.
 ```ruby
 cd <project_folder>
@@ -289,6 +292,7 @@ What is this command doing?
 lsof -i :5432
 ```
 ![lsof](images/11_lsof.png)
+
 6. From the local laptop (while the tunnel is active), use any PostgreSQL client to connect to the RDS Postgres. Configure the client as below.
 	- **Host**: `localhost`
 	- **Port**: `5432`
@@ -460,6 +464,7 @@ ref:
 https://docs.airbyte.com/integrations/sources/postgres
 https://docs.airbyte.com/integrations/destinations/s3-data-lake
 https://airbyte.com/tutorials/incremental-change-data-capture-cdc-replication
+
 ---
 ### Step 1: Create table & user in Postgres
 
@@ -488,7 +493,7 @@ CREATE USER cdc_user PASSWORD 'Password123';
 2. Test the connection.
 ### Step 3: Configure CDC in Postgres
 
-1. Enable logical replication by changing the RDS parameter value. The parameter `rds.logical_replication` is baked into the terraform code. When RDS is up, go to the AWS console -> RDS -> parameter group page -> verify the following values:
+1. Enable logical replication by changing the RDS parameter value. The parameter `rds.logical_replication` is baked into the terraform code. When RDS is up, go to AWS console -> RDS -> parameter group page -> verify the following values:
 ```ruby
 - rds.logical_replication = 1 (so that wal_level will be set to `logical`)
 - max_wal_senders : at least 1 
@@ -688,7 +693,7 @@ helm list -A
 ---
 ## Follow-ups
 1. Implement **Karpenter** or Autoscaler which can dynamically provision and right-size nodes in an EKS (or Kubernetes) cluster to efficiently meet workload demands.
----
+
 ## References
 - https://airbyte.com/tutorials/incremental-change-data-capture-cdc-replication
 - https://medium.com/@kelvingakuo/self-hosting-airbyte-oss-on-aws-elastic-kubernetes-service-c74eb0bdb42d
