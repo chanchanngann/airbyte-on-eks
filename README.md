@@ -423,6 +423,8 @@ https://rachel.airbyte.com
 ---
 ## Part B — Set up CDC synchronization on Airbyte
 
+### CDC pipeline
+
 This part sets up a **Postgres → Iceberg** CDC pipeline using Airbyte:
 - **Source:** RDS Postgres (logical replication / WAL-based CDC)
 - **Destination:** Iceberg tables stored on **S3**, with **Glue Catalog** as the metastore
@@ -451,7 +453,8 @@ Traditional _incremental sync_ depends on a **cursor** like `updated_at` to dete
 - **logical replication enabled** on Postgres
 - **primary key** on tables
 
-**Iceberg as the Destination (data on S3 + Glue Catalog)**
+### Iceberg as the Destination (data on S3 + Glue Catalog)
+
 Airbyte writes CDC updates into an Iceberg table stored on S3, with table metadata managed by Glue Catalog. Athena queries the latest snapshot directly.
 
 **How Airbyte writes:**
@@ -474,7 +477,8 @@ Airbyte uses **Merge-on-Read (MoR)** for Iceberg.
 SELECT * FROM iceberg_db.table_name;
 ```
 
-**Data flow:**
+### Data flow
+
 ```ruby
 Postgres (WAL / Logical Replication)
  ↓
