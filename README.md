@@ -452,7 +452,7 @@ Traditional _incremental sync_ depends on a **cursor** like `updated_at` to dete
 **Airbyte only requires:**
 - **logical replication enabled** on Postgres
 - **primary key** on tables
-
+--
 ### Iceberg as the Destination (data on S3 + Glue Catalog)
 
 Airbyte writes CDC updates into an Iceberg table stored on S3, with table metadata managed by Glue Catalog. Athena queries the latest snapshot directly.
@@ -476,7 +476,7 @@ Airbyte uses **Merge-on-Read (MoR)** for Iceberg.
 ```sql
 SELECT * FROM iceberg_db.table_name;
 ```
-
+--
 ### Data flow
 
 ```ruby
