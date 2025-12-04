@@ -452,6 +452,7 @@ Traditional _incremental sync_ depends on a **cursor** like `updated_at` to dete
 **Airbyte only requires:**
 - **logical replication enabled** on Postgres
 - **primary key** on tables
+
 --
 ### Iceberg as the Destination (data on S3 + Glue Catalog)
 
