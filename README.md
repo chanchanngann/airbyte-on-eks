@@ -430,16 +430,14 @@ This part sets up a **Postgres → Iceberg** CDC pipeline using Airbyte:
 - **Destination:** Iceberg tables stored on **S3**, with **Glue Catalog** as the metastore
 
 **What is CDC in Airbyte?**
-
 - Change Data Capture (CDC) allows Airbyte to read **inserts, updates, and deletes** directly from the Postgres Write-Ahead Log (WAL), instead of scanning tables or relying on cursor fields.
 - Airbyte uses **logical replication** to stream these WAL events and apply them to the destination.
 
 **Why use CDC?**
-
-Traditional _incremental sync_ depends on a **cursor** like `updated_at` to detect new or changed rows, and will fail if:
-- no cursor field exists
-- timestamps are not reliable
-- updates don’t modify the timestamp
+- Traditional _incremental sync_ depends on a **cursor** like `updated_at` to detect new or changed rows, and will fail if:
+	- no cursor field exists
+	- timestamps are not reliable
+	- updates don’t modify the timestamp
 
 => With CDC, **no cursor field** is required because changes are captured as events. Postgres tracks every change in the Write-Ahead Log (WAL) so that Airbyte can read directly from the WAL stream via logical replication.
 *ref: https://www.postgresql.org/docs/current/logicaldecoding-explanation.html*
@@ -459,11 +457,10 @@ Traditional _incremental sync_ depends on a **cursor** like `updated_at` to dete
 Airbyte writes CDC updates into an Iceberg table stored on S3, with table metadata managed by Glue Catalog. Athena queries the latest snapshot directly.
 
 **How Airbyte writes:**
-
-Airbyte uses **Merge-on-Read (MoR)** for Iceberg.
-- Inserts → new Parquet files
-- Updates/deletes → lightweight delete files
-- Iceberg merges data + delete files **logically** at query time
+- Airbyte uses **Merge-on-Read (MoR)** for Iceberg.
+	- Inserts → new Parquet files
+	- Updates/deletes → lightweight delete files
+	- Iceberg merges data + delete files **logically** at query time
 
 **Merge-on-Read vs Copy-on-Write in Iceberg**
 - **Copy-on-Write (CoW):** rewrites whole Parquet files on update/delete → faster reads, expensive writes
