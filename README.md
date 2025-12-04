@@ -35,7 +35,7 @@ Airflow and Airbyte serve different purpose:
 	- Designed for cost-efficient ingestion — avoids full reloads when only changes need to be synced
 	- Transformations are limited and usually delegated to `dbt` or other transformation tools
 
->  If the use case is mainly on data ingestion — especially when CDC is required, Airbyte might be a stronger fit since it reduces custom coding overhead using prebuilt connectors and helps on incremental syncs.
+ **=> If the use case is mainly on data ingestion — especially when CDC is required, Airbyte might be a stronger fit since it reduces custom coding overhead using prebuilt connectors and helps on incremental syncs.**
 
 ### Key Concepts on Airbyte
 Please refer to [1_Concepts_on_Airbyte](1_Concepts_on_Airbyte.md).
@@ -49,21 +49,24 @@ This project deploys Airbyte on Amazon EKS in a secure, production-style network
 - Public subnets host load balancers and bastion host
 - Private subnets host EKS worker nodes and RDS instances
 ![architecture](images/01_architecture.png)
-- Note: can also refer to my old exercise which explains the similar architecture set up.
-  (https://github.com/chanchanngann/data-streaming-on-eks/blob/main/README.md)
+*Note: can also refer to my old exercise which explains the similar architecture set up.
+  (https://github.com/chanchanngann/data-streaming-on-eks/blob/main/README.md)*
 
 ### EKS Cluster
-##### Control Plane
+
+**Control Plane**
 - Fully managed by AWS and reachable through a **public endpoint** for development convenience
 - **Private endpoint** enabled so worker nodes communicate over internal VPC network
 - In production, API access would typically be restricted to Bastion/VPN users
 
 ![controlplane](images/02_controlplane.png)
-##### Worker Nodes (AWS Managed Node Group)
+
+**Worker Nodes (AWS Managed Node Group)** 
 - EC2 instances deployed in private subnets
 - Outbound internet access via NAT Gateway
 - No direct inbound exposure
-##### Networking
+
+**Networking**
 - Nodes communicate with the control plane via private endpoint
 - Applications exposed to the internet through ALB Ingress (for dev setup)
 - Internal communication remains isolated inside private subnets
@@ -76,17 +79,15 @@ This project deploys Airbyte on Amazon EKS in a secure, production-style network
 - Terraform installed
 - kubectl
 - helm
-- eksctl
+- eksctl (optional)
 ---
 ## Part A — Deploy Airbyte on EKS
-To maintain a clean separation between AWS infrastructure and Kubernetes-level components, the deployment workflow is divided into **five stages**. Terraform is used to provision all AWS resources and bootstrap the EKS environment.
-
-The infra is divided into 5 stages.
+To maintain a clean separation between AWS infrastructure and Kubernetes-level components, the deployment workflow is divided into **5 stages**. Terraform is used to provision all AWS resources and bootstrap the EKS environment.
 ### Shared Terraform Plugin Cache
 To avoid downloading provider binaries repeatedly across stages, a shared plugin cache is configured.
 - Terraform supports a shared directory for providers through the `TF_PLUGIN_CACHE_DIR` environment variable.
 - Example in `~/.terraformrc`:
-```bash
+```ruby
 plugin_cache_dir = "$HOME/.terraform.d/plugin-cache"
 ```
 - This way, all stages reuse the same cached providers, improving speed and consistency.
@@ -94,28 +95,33 @@ plugin_cache_dir = "$HOME/.terraform.d/plugin-cache"
 ### Stage 1. Create EKS cluster
 
 This stage provisions the foundational AWS infrastructure and the Kubernetes control plane.
-##### VPC Module
+
+**VPC Module**
 - Creates the networking layer (public/private subnets, NAT gateways, routing tables) required for a fully functional EKS cluster.
-##### EKS Module
+
+**EKS Module**
 - Creates
 	- The EKS cluster (EKS control plane)
 	- Worker node Auto Scaling Groups
 	- IAM Roles and Policies required for the EKS cluster
 	- Security Groups and cluster networking dependencies
-##### Node Group Strategy
+
+**Node Group Strategy**
 - To support Airbyte’s runtime behavior and avoid noisy-neighbor interference, two AWS-managed node groups are created with different **node selector labels**.
-1. **Code Nodes (low-resource workloads)**
-	- Hosts: Airbyte web app, web server, cron, temporal etc. 
-	- Characteristics: Mostly control-plane and UI components; low CPU/memory usage.
-	- label: 
-	  `airbyte_node_type = core`
-2.  **Worker nodes (high-resource workloads)**: 
-	- Hosts: Airbyte worker pods executing sync jobs. 
-	- Characteristics: High CPU/memory demand, sometimes bursty workloads.
-	- label: 
-	  `airbyte_node_type = worker`
-=> Pods are scheduled onto the appropriate nodes using `nodeSelector` depending on workload isolation needs.
-##### Steps
+	a. **Code Nodes (low-resource workloads)**
+		- Hosts: Airbyte web app, web server, cron, temporal etc. 
+		- Characteristics: Mostly control-plane and UI components; low CPU/memory usage.
+		- label: 
+		  `airbyte_node_type = core`
+	b. **Worker nodes (high-resource workloads)**: 
+		- Hosts: Airbyte worker pods executing sync jobs. 
+		- Characteristics: High CPU/memory demand, sometimes bursty workloads.
+		- label: 
+		  `airbyte_node_type = worker`
+		
+	=> Pods are scheduled onto the appropriate nodes using `nodeSelector` depending on workload isolation needs.
+
+### Steps
 
 1. Set up  VPC and EKS stacks.
 ```ruby
@@ -126,7 +132,8 @@ terraform init
 terraform plan
 terraform apply --auto-approve
 ```
-Note: for every module, you need to init to install the modules first.
+*Note: for every module, you need to init to install the modules first.*
+
 2. Check if the cluster is ready on AWS console EKS page. 
 ![console_eks](images/03_console_eks.png)
 
@@ -144,8 +151,9 @@ kubectl get nodes -L node.kubernetes.io/instance-type -L airbyte_node_type
 
 ![get_node](images/05_get_node.png)
 
-##### Optional Steps: Add Access Entries for new user
-1. You can create a new user `dev_user` and grant the user with EKS read-only access (This is done in the terraform code).  
+### Optional Steps: Add Access Entries for new user
+
+1. You can create a new user `dev_user` and grant the user with EKS read-only access (done in the terraform code).  
 2. Configure this new user with a separate aws profile and use this profile to authenticate to EKS cluster. This will create a new context for the new user.
 ```ruby
 # get access key & secret key
@@ -186,14 +194,19 @@ kubectl --context=dev-context auth can-i delete pod
 
 ---
 ### Stage 2. EKS Add-ons
+
 These add-ons extend the EKS cluster with required AWS integrations: 
-##### AWS Load Balancer Controller (via `helm_release`)
+
+**AWS Load Balancer Controller (via `helm_release`)**
 - Manages the lifecycle of AWS ALBs based on Kubernetes Ingress resources.
 - Required for exposing Airbyte UI/API via HTTPS/HTTP.
-##### EBS CSI Driver (via `helm_release`) - Optional
+
+**EBS CSI Driver (via `helm_release`) - Optional**
 - Manages provisioning of EBS volumes.
 - Optional for Airbyte if you are not using PersistentVolumes (in this setup, S3 is used for logs and CDC outputs).
-##### Steps
+
+### Steps
+
 1. Configure Kubernetes & Helm providers. After Stage 1 EKS is ready, feed its endpoint/CA/token from `data.aws_eks_cluster` into the `kubernetes` and `helm` providers configuration.
 ```ruby
 cd ../stage2-addons
@@ -212,8 +225,11 @@ kubectl get deployment -n kube-system
 
 ---
 ### Stage 3. Bastion Host
-- Provides secure administrative access into private subnets (to access the private RDSs.).
-##### Steps
+
+Provides secure administrative access into private subnets (to access the private RDSs.).
+
+### Steps
+
 1. Set up bastion host in public subnet, and get the public IP of bastion host.
 ```ruby
 cd ../stage3-bastion
@@ -225,7 +241,7 @@ terraform output bastion_public_ip
 
 ```
 
-![09_bastion.png](09_bastion.png)
+![09_bastion.png](images/09_bastion.png)
 
 2. SSH into the bastion host using your key pair `<keypairname>.pem`. This key pair should be first baked into terraform code when creating the bastion host.
 ```ruby
@@ -236,9 +252,12 @@ ssh -i auth/<keypairname>.pem ec2-user@<bastion_public_ip>
 
 ---
 ### Stage 4. Deploy RDS (Postgres)
+
 - Airbyte Config Database (RDS PostgreSQL): prerequisite for the deployment of Airbyte using the external DB option
 - CDC Source Database (RDS PostgreSQL): used as source DB in the CDC pipeline.
-##### Steps
+
+### Steps
+
 1. Set up the config DB and CDC source DB.
 ```ruby
 cd ../stage4-rds
@@ -320,11 +339,14 @@ lsof -i :5432
 		- Worker pods (sync jobs) → `airbyte_node_type: worker`
 	- **Resource requests/limits**
 		- Set up CPU/memory requests and limits to ensure predictable scheduling and prevent resource contention.
-##### Steps
+
+### Steps
+
 1. Use terraform to set up the following resources:
-	   - IRSA role for Airbyte
-	   - S3 bucket for Airbyte storage
-	   - Airbyte via Helm customized by values.yaml
+   - IRSA role for Airbyte
+   - S3 bucket for Airbyte storage
+   - Airbyte via Helm customized by values.yaml
+	
 ```ruby
 cd ../stage5-airbyte
 
@@ -334,7 +356,7 @@ terraform apply --auto-approve
 
 ```
 
-2. When deploy is done, check the airbyte pods and services in airbyte namespace. You can find the port number in the output of `kubectl get svc` . This port number is referenced in ingress YAML.
+2. When the deploy is done, check the airbyte pods and services in airbyte namespace. You can find the port number in the output of `kubectl get svc` . This port number will be referenced in ingress YAML.
 ```ruby
 kubectl get svc -n airbyte
 kubectl get pods -n airbyte
@@ -354,9 +376,9 @@ kubectl -n airbyte logs pod_id --tail 50
 ![get_svc_airbyte](images/13_get_svc_airbyte.png)
 ![get_deploy_airbyte](images/14_get_deploy_airbyte.png)
 
-3. To create ingress via HTTPS, we need to create ACM cert first: Create TLS certificate, import to ACM and annotate the Ingress to use the ACM cert ARN.
-   a. create certificate
-   b. import to ACM and copy the ARN value.
+3. To create HTTPS ingress, we need to create ACM cert first: Create TLS certificate, import to ACM and annotate the Ingress to use the ACM cert ARN.
+   - create certificate
+   - import to ACM and copy the ARN value.
 ```ruby
 openssl genrsa -out tls.key 2048
 openssl req -new -x509 -key tls.key -out tls.cert -days 360 -subj "/CN=rachel.airbyte.com"
@@ -365,15 +387,15 @@ openssl req -new -x509 -key tls.key -out tls.cert -days 360 -subj "/CN=rachel.ai
 4. Create ingress resource using `airbyte-ingress.yaml`.
    - Add the ACM annotation: `alb.ingress.kubernetes.io/certificate-arn`
    - Use **main API server** as the backend service: `airbyte-v2-airbyte-server-svc`
-   - Port number: 8001
+   - Port number: 8001 ( from output of `kubectl get svc -n airbyte`)
 ```ruby
 cd ../stage5-airbyte
 kubectl create -f airbyte-ingress.yaml
 ```
 5. In AWS console, check and wait until the load balancer is ready. It takes some time to provision the load balancer.
-	- make sure ACM certificate is imported
-	- make sure LB listener includes `443`
-	- make sure load balancer security group inbound rule includes HTTPS 443 traffic
+   - make sure ACM certificate is imported
+   - make sure LB listener includes `443`
+   - make sure load balancer security group inbound rule includes HTTPS 443 traffic
 ![elb](images/15_elb.png)
 
 6. When ALB is provisioned, get the IP of the ingress.
@@ -382,6 +404,7 @@ kubectl get ingress -n airbyte
 nslookup k8s-airbyte-airbytei-xxx.xxx.elb.amazonaws.com
 ```
 ![ingress](images/16_ingress.png)
+
 7. Update the local `/etc/hosts` file to map the ALB Controller’s external IP to the Airbyte HTTPS hostname.
 ```ruby
 sudo vi /etc/hosts
@@ -390,11 +413,12 @@ sudo vi /etc/hosts
 12.34.56.78 rachel.airbyte.com
 ```
 
-8. Go chrome browser and access Airbyte!
+8. Go to chrome browser and enter Airbyte URL.
 ```ruby
 https://rachel.airbyte.com
 ```
 ![airbyte_ui](images/17_airbyte_ui.png)
+
 
 ---
 ## Part B — Set up CDC synchronization on Airbyte
@@ -460,10 +484,10 @@ Glue Catalog (Iceberg table metadata)
 Athena (query the latest snapshot)
 ```
 
-ref: 
-https://docs.airbyte.com/integrations/sources/postgres
-https://docs.airbyte.com/integrations/destinations/s3-data-lake
-https://airbyte.com/tutorials/incremental-change-data-capture-cdc-replication
+*ref:* 
+- https://docs.airbyte.com/integrations/sources/postgres
+- https://docs.airbyte.com/integrations/destinations/s3-data-lake
+- https://airbyte.com/tutorials/incremental-change-data-capture-cdc-replication
 
 ---
 ### Step 1: Create table & user in Postgres
