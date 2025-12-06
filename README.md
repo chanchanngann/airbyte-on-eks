@@ -157,6 +157,7 @@ kubectl get nodes -L node.kubernetes.io/instance-type -L airbyte_node_type
 2. Configure this new user with a separate aws profile and use this profile to authenticate to EKS cluster. This will create a new context for the new user.
 ```ruby
 # get access key & secret key
+cd <project_folder>/terraform
 cd stage1-eks
 terraform output dev_user_access_key_id
 terraform output -raw dev_user_secret_access_key
@@ -676,6 +677,11 @@ There are still areas that would need improvement for a true production deployme
 Even so, this project provides a solid foundation and a clear demonstration of how modern CDC + lakehouse architectures work end-to-end on AWS.
 
 ---
+## Troubleshooting
+
+**Please refer to [3_Troubleshooting](3_Troubleshooting) page.**
+
+---
 ## Clean up
 
 1. Destroy the infrastructure built by terraform. (stage5 -> stage 4 -> stage 3 -> stage 2 -> stage 1)
@@ -713,16 +719,20 @@ helm list -A
 ```
 
 3. Verify if all objects are deleted @AWS console. 
-	   - EKS cluster
-	   - RDS instances
-	   - EC2s
-	   - EBS volumes
-	   - Load balancers
+   - EKS cluster
+   - RDS instances
+   - EC2s
+   - EBS volumes
+   - Load balancers
 
 ---
 ## Follow-ups
-1. Implement **Karpenter** or Autoscaler which can dynamically provision and right-size nodes in an EKS (or Kubernetes) cluster to efficiently meet workload demands.
+1. Add Karpenter for Dynamic Node Provisioning
+   Implement **Karpenter** to dynamically spin up the most cost-efficient EC2 instances based on workload demands.
+2. Introduce Monitoring & Observability (Prometheus + Grafana)
+   Add dashboards to monitor cluster resource usage to improve visibility and troubleshooting.
 
+---
 ## References
 - https://airbyte.com/tutorials/incremental-change-data-capture-cdc-replication
 - https://medium.com/@kelvingakuo/self-hosting-airbyte-oss-on-aws-elastic-kubernetes-service-c74eb0bdb42d
