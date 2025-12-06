@@ -1,0 +1,30 @@
+# for Airbyte’s main components: airbyte-server, airbyte-worker, airbyte-temporal, airbyte-webapp
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: airbyte-admin-role
+rules:
+  # Allow managing Secrets for connector configurations
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
+
+  # Allow managing ConfigMaps (for runtime configs)
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
+
+  # Allow Airbyte system pods to interact with other pods
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec", "pods/log", "pods/status", "pods/ephemeralcontainers"]
+    verbs: ["create", "delete", "get", "list", "watch", "patch"]
+
+  # Allow batch jobs for temporary tasks (check/discover runs)
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "delete", "get", "list", "watch"]
+
+  # Allow access to events for better diagnostics
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
