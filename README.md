@@ -679,7 +679,7 @@ Even so, this project provides a solid foundation and a clear demonstration of h
 ---
 ## Troubleshooting
 
-**Please refer to [3_Troubleshooting](3_Troubleshooting) page.**
+**Please refer to [3_Troubleshooting](3_Troubleshooting.md) page.**
 
 ---
 ## Clean up
