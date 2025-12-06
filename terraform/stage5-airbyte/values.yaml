@@ -4,7 +4,7 @@
 ##################################
 global:
   # -- Service Account name override
-  serviceAccountName: &service-account-name airbyte-sa # (rachel) a default override for all Airbyte components unless custom sa is explicitly set in individual component
+  serviceAccountName: &service-account-name airbyte-sa # a default override for all Airbyte components unless custom sa is explicitly set in individual component
 
   # -- The URL where Airbyte will be reached; This should match your Ingress host
   airbyteUrl: "https://rachel.airbyte.com"
