@@ -1,4 +1,4 @@
-### Issue #1: Managed node group failed to join the EKS cluster
+## Issue #1: Managed node group failed to join the EKS cluster
 
 **Description:**
 The nodes were ready, but the EKS cluster is stuck in `creating` status. The node group were not able to the EKS cluster.
@@ -56,7 +56,7 @@ kubectl delete crd policyendpoints.networking.k8s.aws
 
 ---
 
-### Issue #2: Error while authenticating with cluster: `kubectl get svc`
+## Issue #2: Error while authenticating with cluster: `kubectl get svc`
 
 **Error message:**
 ```ruby
@@ -135,7 +135,7 @@ sudo installer -pkg ./AWSCLIV2.pkg -target /
 - ref: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
 
 ---
-### Issue #3: `kubectl get nodes` error
+## Issue #3: `kubectl get nodes` error
 
 **Error message:**
 ```ruby
@@ -153,7 +153,7 @@ policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
   - https://docs.aws.amazon.com/eks/latest/userguide/access-policies.html
 
 ---
-### Issue #4: airbyte db stuck in `Pending` status
+## Issue #4: airbyte db stuck in `Pending` status
 
 For the first attempt, I tried to use PV as Airbyte storage. When I ran `kubectl describe pod airbyte-db-0 -n airbyte`, I got  the following message.
 
@@ -176,7 +176,7 @@ kubectl get storageclass -A
 - I didn't try to solve the PVC issue. Instead of using the internal Minio instance as storage, I used external storage S3 instead to escape from this PVC error loop.
 - ref: https://docs.airbyte.com/platform/deploying-airbyte/integrations/storage
 ---
-### Issue #5: Airbyte pod airbyte-v2-bootloader failed
+## Issue #5: Airbyte pod airbyte-v2-bootloader failed
 
 During Airbyte installation using Helm, pod airbyte-v2-bootloader failed.
 
@@ -203,7 +203,7 @@ kubectl apply -f airbyte-rolebinding.yaml
 => I baked the RBAC into terraform code `terraform/stage5-airbyte/airbyte.tf`.
 
 ---
-### Issue #6: Too many airbyte pods error
+## Issue #6: Too many airbyte pods error
 
 In the initial attempt, the worker pod(s) were not running, I tried `kubectl describe po xxx -n airbyte` to check the reason. Then I got following message.
 
@@ -230,7 +230,7 @@ terraform apply --auto-approve
 => result: problem solved.
 
 ---
-### Issue #7: Failed to create postgres source connector in Airbyte
+## Issue #7: Failed to create postgres source connector in Airbyte
 
 After I filled in all the fields to create postgres source connector in Airbyte, I tried to test connection. Then I got the error message.
 
@@ -305,7 +305,7 @@ kubectl auth can-i create jobs --as=system:serviceaccount:airbyte:airbyte-sa -n 
 -  I had the clusterrole `airbyte-admin-role` to include permissions that workloadLauncher would need and assigned this role to `airbyte-sa` , then referenced `airbyte-sa` under workloadLauncher in values.yaml.
 
 ---
-### issue #8: Failed to create destination connector at airbyte
+## issue #8: Failed to create destination connector at airbyte
 
 - While testing connection with the destination `s3 data lake`, i got the following error message.
 
@@ -326,7 +326,7 @@ Resource = [
 ```
 
 ---
-### issue #9: Failed to do CDC sync in Airbyte
+## issue #9: Failed to do CDC sync in Airbyte
 
 **Error message:**
 ```ruby
