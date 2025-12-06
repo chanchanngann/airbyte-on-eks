@@ -382,28 +382,6 @@ webapp:
   ingress:
     # -- Set to true to enable ingress record generation
     enabled: false
-    # # -- Specifies ingressClassName for clusters >= 1.18+
-    # className: "alb"
-    # # -- Ingress annotations done as key:value pairs
-    # annotations:
-    #   kubernetes.io/ingress.class: "alb"
-    #   alb.ingress.kubernetes.io/scheme: internet-facing
-    #   alb.ingress.kubernetes.io/target-type: ip
-    #   alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:422745201980:certificate/a390c9b9-1560-4734-a735-40b317d65ec9
-    #   alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-    # # kubernetes.io/ingress.class: nginx
-    # # kubernetes.io/tls-acme: "true"
-    # # -- The list of hostnames to be covered with this ingress record.
-    # hosts:
-    # - host: rachel.airbyte.com
-    #   paths:
-    #   - path: /
-    #     pathType: Prefix # ImplementationSpecific
-    # # -- Custom ingress TLS configuration
-    # tls: []
-    # # - secretName: chart-example-tls
-    # #   hosts:
-    # #   - chart-example.local
 
   api:
     # -- The webapp API url
