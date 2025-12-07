@@ -110,16 +110,16 @@ This stage provisions the foundational AWS infrastructure and the Kubernetes con
 - To support Airbyte’s runtime behavior and avoid noisy-neighbor interference, two AWS-managed node groups are created with different **node selector labels**.
 
 	a. **Code Nodes (low-resource workloads)**
-		- Hosts: Airbyte web app, web server, cron, temporal etc. 
-		- Characteristics: Mostly control-plane and UI components; low CPU/memory usage.
-		- label: 
+	- Hosts: Airbyte web app, web server, cron, temporal etc. 
+	- Characteristics: Mostly control-plane and UI components; low CPU/memory usage.
+	- label: 
 		  `airbyte_node_type = core`
 	
 	b. **Worker nodes (high-resource workloads)**: 
-		- Hosts: Airbyte worker pods executing sync jobs. 
-		- Characteristics: High CPU/memory demand, sometimes bursty workloads.
-		- label: 
-		  `airbyte_node_type = worker`
+	- Hosts: Airbyte worker pods executing sync jobs. 
+	- Characteristics: High CPU/memory demand, sometimes bursty workloads.
+	- label: 
+	  `airbyte_node_type = worker`
 		
 	=> Pods are scheduled onto the appropriate nodes using `nodeSelector` depending on workload isolation needs.
 
@@ -663,11 +663,12 @@ SELECT * FROM "iceberg_db"."customers$history" order by made_current_at desc;
 
 SELECT * FROM iceberg_db.customers FOR VERSION AS OF 4229096650788304753;
 ```
+
 - List table history:
 ![32_athena_history.png](images/32_athena_history.png)
 
 - Test time travel: 
-  This snapshot version still shows `charlie.park@example.com`, even though the value has been updated to `charlie.new@example.com` in the latest snapshot.
+  - This snapshot version still shows `charlie.park@example.com`, even though the value has been updated to `charlie.new@example.com` in the latest snapshot.
 ![33_athena_timetravel.png](images/33_athena_timetravel.png)
 ---
 ## Conclusion
@@ -730,9 +731,9 @@ helm list -A
 ---
 ## Follow-ups
 1. Add Karpenter for Dynamic Node Provisioning
-   Implement **Karpenter** to dynamically spin up the most cost-efficient EC2 instances based on workload demands.
+   - Implement **Karpenter** to dynamically spin up the most cost-efficient EC2 instances based on workload demands.
 2. Introduce Monitoring & Observability (Prometheus + Grafana)
-   Add dashboards to monitor cluster resource usage to improve visibility and troubleshooting.
+   - Add dashboards to monitor cluster resource usage to improve visibility and troubleshooting.
 
 ---
 ## References
