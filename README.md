@@ -43,7 +43,7 @@ Please refer to [1_Concepts_on_Airbyte](1_Concepts_on_Airbyte.md).
 ---
 ## Architecture
 
-This project deploys Airbyte on Amazon EKS in a secure, production-style network design. 
+This project provisions Airbyte on EKS with a secure VPC layout and modern AWS integrations.
 ### VPC
 - 3× **public subnets** and 3× **private subnets** across 3 AZs
 - Public subnets host load balancers and bastion host
@@ -108,11 +108,13 @@ This stage provisions the foundational AWS infrastructure and the Kubernetes con
 
 **Node Group Strategy**
 - To support Airbyte’s runtime behavior and avoid noisy-neighbor interference, two AWS-managed node groups are created with different **node selector labels**.
+
 	a. **Code Nodes (low-resource workloads)**
 		- Hosts: Airbyte web app, web server, cron, temporal etc. 
 		- Characteristics: Mostly control-plane and UI components; low CPU/memory usage.
 		- label: 
 		  `airbyte_node_type = core`
+	
 	b. **Worker nodes (high-resource workloads)**: 
 		- Hosts: Airbyte worker pods executing sync jobs. 
 		- Characteristics: High CPU/memory demand, sometimes bursty workloads.
